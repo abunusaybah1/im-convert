@@ -1,7 +1,5 @@
 "use client";
-// import { NewImage } from "@/types/index";
 import React, { useState } from "react";
-// import Image from "next/image";
 
 const ImageConvert = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -15,31 +13,41 @@ const ImageConvert = () => {
     const newImage = e.target.files?.[0];
     if (!newImage) return;
 
-    // if (
-    //   newImage.type.includes("image/jpeg") ||
-    //   newImage.type.includes("image/jpg")
-    // ) {
-    const reader = new FileReader(); //The FileReader interface lets web applications asynchronously read the contents of files (or raw data buffers) stored on the user's computer, using File or Blob objects to specify the file or data to read.
+    if (!newImage.type.startsWith("image/")) {
+      setStatus("Please upload a valid image file.");
+      setStatusColor("#dc2626");
+      setTimeout(() => {
+        setStatus("");
+        setStatusColor("");
+      }, 3000);
+      return;
+    }
+
+    const reader = new FileReader();
     reader.onload = (e) => {
       setImageSrc(e.target?.result as string);
       setImageFile(newImage);
-      return imageFile;
     };
-
-    reader.readAsDataURL(newImage); //The readAsDataURL() method of the FileReader interface is used to read the contents of the specified file's data as a base64 encoded string.
-    // } else {
-    //   setStatus("Please upload a jpeg image");
-    //   setStatusColor("#dc2626");
-
-    //   setTimeout(() => {
-    //     setStatus("");
-    //     setStatusColor("");
-    //   }, 3000);
-
-    //   e.target.value = "";
-    //   setImageSrc(null);
-    // }
+    reader.readAsDataURL(newImage);
     e.preventDefault();
+  };
+
+  const triggerDownload = (dataUrl: string) => {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "im-convert-image.png";
+    a.click();
+  };
+
+  const finishCompression = (message: string) => {
+    setIsLoading(false);
+    setStatusColor("#16a34a");
+    setStatus(message);
+    setNewSize("");
+    setTimeout(() => {
+      setStatus("");
+      setStatusColor("");
+    }, 4000);
   };
 
   const handleCompress = (e: React.FormEvent<HTMLFormElement>) => {
@@ -48,66 +56,81 @@ const ImageConvert = () => {
     setStatusColor("#2563eb");
     setStatus("Compressing image, please wait...");
 
-    setTimeout(() => {
-      setStatus("");
-      setStatusColor("");
-    }, 3000);
-
     if (!imageSrc) return;
 
     setTimeout(() => {
       const imageObj = new Image();
 
       imageObj.onload = () => {
-        const width = imageObj.width;
-        const height = imageObj.height;
-        const canvasElem = document.createElement("canvas");
+        const targetBytes = Number(newSize) * 1024;
+        const rawPixelBytes = imageObj.width * imageObj.height * 4;
 
-        const pixelBytes = width * height * 4;
-        const scale = Math.sqrt((Number(newSize) * 1024) / pixelBytes); //
+        const getPngResult = (
+          scale: number,
+        ): { dataUrl: string; bytes: number } => {
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.floor(imageObj.width * scale));
+          canvas.height = Math.max(1, Math.floor(imageObj.height * scale));
 
-        canvasElem.width = Math.floor(width * scale); // Gets the width and heigth of the image to be used as the canvas dimensions
-        canvasElem.height = Math.floor(height * scale);
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
 
-        const canvasContext = canvasElem.getContext("2d");
-        if (!canvasContext) return;
+          const dataUrl = canvas.toDataURL("image/png");
+          const bytes = Math.round(dataUrl.length * 1.2);
+          return { dataUrl, bytes };
+        };
 
-        canvasContext.drawImage(
-          imageObj,
-          0,
-          0,
-          canvasElem.width,
-          canvasElem.height,
+        // check if full-size image already fits within target
+        const fullSize = getPngResult(1.5);
+        if (fullSize.bytes <= targetBytes) {
+          triggerDownload(fullSize.dataUrl);
+          const actualKb = (fullSize.bytes / 1024).toFixed(1);
+          finishCompression(
+            `Done! Image was already within target. Downloaded at ~${actualKb} KB`,
+          );
+          return;
+        }
+
+        // binary search for the best scale
+        const initialScale = Math.min(
+          1,
+          Math.sqrt(targetBytes / rawPixelBytes),
         );
-        const dataUrl = canvasElem.toDataURL("image/png"); //The HTMLCanvasElement.toDataURL() method returns a data URL containing a representation of the image in the format specified by the type parameter.
+        let low = 0.01;
+        let high = initialScale;
+        let best = getPngResult(initialScale);
 
-        const imageDownloadLink = document.createElement("a");
-        imageDownloadLink.href = dataUrl;
-        imageDownloadLink.download = "im-convert-image.png";
-        imageDownloadLink.click();
-        setIsLoading(false);
-        setStatusColor("#16a34a");
-        setStatus("Image compressed successfully and downloaded!");
-        setTimeout(() => {
-          setStatus("");
-          setStatusColor("");
-        }, 3000);
-        setNewSize("");
+        for (let i = 0; i < 15; i++) {
+          const mid = (low + high) / 2;
+          const result = getPngResult(mid);
+
+          if (
+            Math.abs(result.bytes - targetBytes) <
+            Math.abs(best.bytes - targetBytes)
+          ) {
+            best = result;
+          }
+
+          if (result.bytes > targetBytes) high = mid;
+          else low = mid;
+        }
+
+        triggerDownload(best.dataUrl);
+        const actualKb = (best.bytes / 1024).toFixed(1);
+        finishCompression(`Done! Downloaded at ~${actualKb} KB`);
       };
 
       imageObj.src = imageSrc;
-    }, 2000);
+    }, 500);
   };
 
   return (
     <>
-      <p className="text-lg text-gray-700">
-        Compress your images to your desired sizes
-      </p>
+      <p className="text-lg text-gray-900">Compress your image to PNG format</p>
       <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
-        <h2 className="text-2xl font-bold mb-4 text-center text-black">Image Upload</h2>
+        <h2 className="text-2xl font-bold mb-4 text-center">Image Upload</h2>
         <p className="text-gray-900 text-center">
-          Upload the image you want to compress here
+          Upload your image to be compressed here
         </p>
 
         <section className="mt-10">
@@ -121,16 +144,16 @@ const ImageConvert = () => {
               accept="image/*"
               id="upload"
               onChange={handleUploadImage}
-              className="text-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             {imageSrc && (
               <div className="flex flex-col items-center mt-6">
                 <h3 className="text-xl font-semibold mb-2">Preview</h3>
-                <p className="text-gray-500 mb-4">
+                <p className="text-gray-900 mb-4">
                   Image preview will be shown here
                 </p>
                 <p>
-                  Image size:
+                  Image size:{" "}
                   {imageFile?.size ? (imageFile.size / 1024).toFixed(2) : 0} KB
                 </p>
                 <img
@@ -142,15 +165,19 @@ const ImageConvert = () => {
                 Preferred size in KB{" "}
                 <input
                   type="number"
-                  className="border-red-600 "
+                  className="border-red-600"
                   placeholder="Enter preferred size in KB"
                   value={newSize}
                   onChange={(e) => setNewSize(e.target.value)}
                 />
                 <button
                   type="submit"
-                  disabled={!newSize}
-                  className={`${newSize ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-500 disabled cursor-not-allowed"} px-6 py-2 text-white rounded transition-colors duration-200`}
+                  disabled={!newSize || isLoading}
+                  className={`${
+                    newSize && !isLoading
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-gray-500 cursor-not-allowed"
+                  } px-6 py-2 text-white rounded transition-colors duration-200`}
                 >
                   {isLoading ? "Compressing..." : "Compress image"}
                 </button>
