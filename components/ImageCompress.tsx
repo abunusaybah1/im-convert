@@ -102,12 +102,12 @@ const ImageConvert = () => {
   return (
     <>
       <p className="text-lg text-gray-700">
-        Compress your Jpeg image to PNG format
+        Compress your images to your desired sizes
       </p>
       <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
         <h2 className="text-2xl font-bold mb-4 text-center">Image Upload</h2>
         <p className="text-gray-600 text-center">
-          Upload your Jpeg image to be compressed here
+          Upload the image you want to compress here
         </p>
 
         <section className="mt-10">
