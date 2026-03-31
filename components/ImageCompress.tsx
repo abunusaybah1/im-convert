@@ -105,8 +105,8 @@ const ImageConvert = () => {
         Compress your images to your desired sizes
       </p>
       <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
-        <h2 className="text-2xl font-bold mb-4 text-center">Image Upload</h2>
-        <p className="text-gray-600 text-center">
+        <h2 className="text-2xl font-bold mb-4 text-center text-black">Image Upload</h2>
+        <p className="text-gray-900 text-center">
           Upload the image you want to compress here
         </p>
 
@@ -121,7 +121,7 @@ const ImageConvert = () => {
               accept="image/*"
               id="upload"
               onChange={handleUploadImage}
-              className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              className="text-red-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             {imageSrc && (
               <div className="flex flex-col items-center mt-6">
