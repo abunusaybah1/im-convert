@@ -9,57 +9,62 @@ const ImageConvert = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [newSize, setNewSize] = useState<string>("");
   const [status, setStatus] = useState<string>("");
+  const [statusColor, setStatusColor] = useState<string>("");
 
   const handleUploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newImage = e.target.files?.[0];
     if (!newImage) return;
 
-    if (
-      newImage.type.includes("image/jpeg") ||
-      newImage.type.includes("image/jpg")
-    ) {
-      const reader = new FileReader(); //The FileReader interface lets web applications asynchronously read the contents of files (or raw data buffers) stored on the user's computer, using File or Blob objects to specify the file or data to read.
-      reader.onload = (e) => {
-        setImageSrc(e.target?.result as string);
-        setImageFile(newImage);
-        return imageFile;
-      };
-      reader.readAsDataURL(newImage); //The readAsDataURL() method of the FileReader interface is used to read the contents of the specified file's data as a base64 encoded string.
-    } else {
-      setStatus("Please upload a jpeg image");
-      setTimeout(() => {
-        setStatus("");
-      }, 3000);
-      e.target.value = "";
-      setImageSrc(null);
-    }
+    // if (
+    //   newImage.type.includes("image/jpeg") ||
+    //   newImage.type.includes("image/jpg")
+    // ) {
+    const reader = new FileReader(); //The FileReader interface lets web applications asynchronously read the contents of files (or raw data buffers) stored on the user's computer, using File or Blob objects to specify the file or data to read.
+    reader.onload = (e) => {
+      setImageSrc(e.target?.result as string);
+      setImageFile(newImage);
+      return imageFile;
+    };
+
+    reader.readAsDataURL(newImage); //The readAsDataURL() method of the FileReader interface is used to read the contents of the specified file's data as a base64 encoded string.
+    // } else {
+    //   setStatus("Please upload a jpeg image");
+    //   setStatusColor("#dc2626");
+
+    //   setTimeout(() => {
+    //     setStatus("");
+    //     setStatusColor("");
+    //   }, 3000);
+
+    //   e.target.value = "";
+    //   setImageSrc(null);
+    // }
     e.preventDefault();
   };
 
   const handleCompress = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setStatusColor("#2563eb");
     setStatus("Compressing image, please wait...");
+
     setTimeout(() => {
       setStatus("");
+      setStatusColor("");
     }, 3000);
-    setNewSize("");
 
     if (!imageSrc) return;
 
     setTimeout(() => {
       const imageObj = new Image();
-      const width = imageObj.width;
-      const height = imageObj.height;
-
-      imageObj.src = imageSrc;
 
       imageObj.onload = () => {
+        const width = imageObj.width;
+        const height = imageObj.height;
         const canvasElem = document.createElement("canvas");
 
-        const scale = Math.sqrt(
-          (Number(newSize) * 1024) / (imageFile?.size || 1),
-        ); //When we divide the new size by the original size, we get a ratio that represents how much smaller the new image should be compared to the original. By taking the square root of this ratio, we can determine the scaling factor for both the width and height of the image, ensuring that the aspect ratio is maintained while resizing.
+        const pixelBytes = width * height * 4;
+        const scale = Math.sqrt((Number(newSize) * 1024) / pixelBytes); //
 
         canvasElem.width = Math.floor(width * scale); // Gets the width and heigth of the image to be used as the canvas dimensions
         canvasElem.height = Math.floor(height * scale);
@@ -80,10 +85,17 @@ const ImageConvert = () => {
         imageDownloadLink.href = dataUrl;
         imageDownloadLink.download = "im-convert-image.png";
         imageDownloadLink.click();
+        setIsLoading(false);
+        setStatusColor("#16a34a");
+        setStatus("Image compressed successfully and downloaded!");
+        setTimeout(() => {
+          setStatus("");
+          setStatusColor("");
+        }, 3000);
+        setNewSize("");
       };
 
-      setIsLoading(false);
-      setStatus("Image compressed successfully and downloaded!");
+      imageObj.src = imageSrc;
     }, 2000);
   };
 
@@ -144,7 +156,11 @@ const ImageConvert = () => {
                 </button>
               </div>
             )}
-            {status && <p className="text-green-600 mt-4">{status}</p>}
+            {status && (
+              <p style={{ color: statusColor }} className="mt-4">
+                {status}
+              </p>
+            )}
           </form>
         </section>
       </div>
