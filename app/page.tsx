@@ -3,7 +3,7 @@ import Link from "next/link";
 
 const page = () => {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 bg-linear-to-br from-blue-50 to-blue-100">
       {/* Hero Section */}
       <div className="max-w-xl text-center mb-10">
         <h1 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">
