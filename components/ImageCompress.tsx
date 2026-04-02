@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
-const ImageConvert = () => {
+const ImageCompress = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -76,12 +76,12 @@ const ImageConvert = () => {
           ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
 
           const dataUrl = canvas.toDataURL("image/png");
-          const bytes = Math.round(dataUrl.length * 1.2);
+          const bytes = Math.round(dataUrl.length * 0.09);
           return { dataUrl, bytes };
         };
 
         // check if full-size image already fits within target
-        const fullSize = getPngResult(1.5);
+        const fullSize = getPngResult(1);
         if (fullSize.bytes <= targetBytes) {
           triggerDownload(fullSize.dataUrl);
           const actualKb = (fullSize.bytes / 1024).toFixed(1);
@@ -125,19 +125,19 @@ const ImageConvert = () => {
   };
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col items-center justify-center py-8 bg-linear-to-br from-blue-50 to-blue-100">
+      <h2 className="text-3xl font-bold mb-4 text-blue-800">Im-Convert</h2>
+
       <p className="text-lg text-gray-900">Compress your image to PNG format</p>
       <div className="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
         <h2 className="text-2xl font-bold mb-4 text-center">Image Upload</h2>
-        <p className="text-gray-900 text-center">
-          Upload your image to be compressed here
-        </p>
+        <p className="text-gray-900 text-center">Upload your image here</p>
 
         <section className="mt-10">
           <form
             action=""
             onSubmit={handleCompress}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-6 justify-center items-center"
           >
             <input
               type="file"
@@ -191,8 +191,8 @@ const ImageConvert = () => {
           </form>
         </section>
       </div>
-    </>
+    </div>
   );
 };
 
-export default ImageConvert;
+export default ImageCompress;

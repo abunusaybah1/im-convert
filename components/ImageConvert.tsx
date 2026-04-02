@@ -1,11 +1,22 @@
 "use client";
-// import { NewImage } from "@/types/index";
 import React, { useState } from "react";
-// import Image from "next/image";
 
 const ImageConvert = () => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [status, setStatus] = useState<string>("");
+  const [statusColor, setStatusColor] = useState<string>("");
+
+  const finishConversion = (message: string) => {
+    setIsLoading(false);
+    setStatusColor("#16a34a");
+    setStatus(message);
+    setTimeout(() => {
+      setStatus("");
+      setStatusColor("");
+    }, 4000);
+  };
 
   const handleUploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newImage = e.target.files?.[0];
@@ -15,23 +26,31 @@ const ImageConvert = () => {
       newImage.type.includes("image/jpeg") ||
       newImage.type.includes("image/jpg")
     ) {
-      //   setTimeout(() => {
-      const reader = new FileReader(); //The FileReader interface lets web applications asynchronously read the contents of files (or raw data buffers) stored on the user's computer, using File or Blob objects to specify the file or data to read.
+      const reader = new FileReader();
       reader.onload = (e) => {
         setImageSrc(e.target?.result as string);
+        setImageFile(newImage);
       };
-      reader.readAsDataURL(newImage); //The readAsDataURL() method of the FileReader interface is used to read the contents of the specified file's data as a base64 encoded string.
-      //   }, 2000);
+      reader.readAsDataURL(newImage);
     } else {
-      alert("Please upload a jpeg image");
+      setStatus("Please upload a valid JPEG image.");
+      setStatusColor("#dc2626");
       e.target.value = "";
       setImageSrc(null);
+      setImageFile(null);
+      setTimeout(() => {
+        setStatus("");
+        setStatusColor("");
+      }, 3000);
     }
     e.preventDefault();
   };
 
   const handleConvert = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setIsLoading(true);
+    setStatusColor("#2563eb");
+    setStatus("Converting image, please wait...");
 
     if (!imageSrc) return;
 
@@ -41,32 +60,29 @@ const ImageConvert = () => {
 
       imageObj.onload = () => {
         const canvasElem = document.createElement("canvas");
-        const width = imageObj.width;
-        const height = imageObj.height;
-
-        canvasElem.width = imageObj.width; // Gets the width and heigth of the image to be used as the canvas dimensions
+        canvasElem.width = imageObj.width;
         canvasElem.height = imageObj.height;
 
         const canvasContext = canvasElem.getContext("2d");
         if (!canvasContext) return;
 
         canvasContext.drawImage(imageObj, 0, 0);
-        const dataUrl = canvasElem.toDataURL("image/png"); //The HTMLCanvasElement.toDataURL() method returns a data URL containing a representation of the image in the format specified by the type parameter.
+        const dataUrl = canvasElem.toDataURL("image/png");
 
         const imageDownloadLink = document.createElement("a");
         imageDownloadLink.href = dataUrl;
         imageDownloadLink.download = "im-convert-image.png";
         imageDownloadLink.click();
+
+        finishConversion("Done! Your image has been converted and downloaded.");
       };
     }, 2000);
-
-    alert(
-      "Your image is being converted and will download automatically, please wait...",
-    );
   };
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col items-center justify-center py-8 bg-linear-to-br from-blue-50 to-blue-100">
+      <h2 className="text-3xl font-bold mb-4 text-blue-800">Im-Convert</h2>
+
       <p className="text-lg text-gray-700">
         Convert your Jpeg image to PNG format
       </p>
@@ -76,9 +92,8 @@ const ImageConvert = () => {
 
         <section className="mt-10">
           <form
-            action=""
             onSubmit={handleConvert}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-6 justify-center items-center"
           >
             <input
               type="file"
@@ -93,6 +108,10 @@ const ImageConvert = () => {
                 <p className="text-gray-500 mb-4">
                   Image preview will be shown here
                 </p>
+                <p>
+                  Image size:{" "}
+                  {imageFile?.size ? (imageFile.size / 1024).toFixed(2) : 0} KB
+                </p>
                 <img
                   src={imageSrc}
                   alt="Preview"
@@ -101,16 +120,29 @@ const ImageConvert = () => {
                 />
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors duration-200"
+                  disabled={isLoading}
+                  className={`${
+                    !isLoading
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-gray-500 cursor-not-allowed"
+                  } px-6 py-2 text-white rounded transition-colors duration-200`}
                 >
-                  {isLoading ? "Converting" : "Convert to PNG"}
+                  {isLoading ? "Converting..." : "Convert to PNG"}
                 </button>
               </div>
+            )}
+            {status && (
+              <p
+                style={{ color: statusColor }}
+                className="mt-4 align-self-cente m-auto"
+              >
+                {status}
+              </p>
             )}
           </form>
         </section>
       </div>
-    </>
+    </div>
   );
 };
 
